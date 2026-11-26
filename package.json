@@ -57,6 +57,7 @@
     },
     "dmg": {
       "title": "Meeting Copilot ${version}"
-    }
+    },
+    "artifactName": "Meeting-Copilot-${version}-${arch}.${ext}"
   }
 }
