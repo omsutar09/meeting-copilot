@@ -2,6 +2,21 @@
 
 A small always-on-top macOS app that listens to a call, transcribes both sides live, and streams suggested answers from Claude.
 
+## Download
+
+**[⬇ Download Meeting Copilot 0.1.0 for Mac (Apple Silicon, .dmg)](https://github.com/omsutar09/meeting-copilot/releases/download/v0.1.0/Meeting-Copilot-0.1.0-arm64.dmg)** · about 150 MB · [all releases](https://github.com/omsutar09/meeting-copilot/releases)
+
+Needs macOS 13 or later on an Apple Silicon Mac, and a Claude account. First open: see [Install the Mac app](#install-the-mac-app-apple-silicon).
+
+## Screenshots
+
+| During a call | First launch |
+|---|---|
+| <img src="docs/screenshots/live-call.png" width="380" alt="Meeting Copilot listening to a call: the interviewer asks how to design a rate limiter for a public API, and a suggested answer streams in"> | <img src="docs/screenshots/first-run.png" width="380" alt="Meeting Copilot on first launch, offering to download the 483 MB Parakeet speech model"> |
+| The interviewer's question is transcribed on your Mac, detected as a question, and Claude's suggested answer streams in (here in 6.4 s). | On first launch the app offers to download the speech model it needs. If Claude Code is missing or signed out, it shows Install and Sign in steps here too. |
+
+Screenshots come from the app's own window. The interviewer's question was played to the app as synthesized speech; the transcript and the answer are the app's real output. No resume or notes were loaded, so the answer is generic.
+
 - **Them**: system audio (Zoom, Meet, Teams…) captured with macOS ScreenCaptureKit
 - **Me**: your microphone
 - **Transcription**: on your Mac, no API key or internet needed. Pick the engine in Settings:
@@ -12,7 +27,7 @@ A small always-on-top macOS app that listens to a call, transcribes both sides l
 
 ## Install the Mac app (Apple Silicon)
 
-1. Open `Meeting Copilot-<version>-arm64.dmg` and drag **Meeting Copilot** to Applications.
+1. [Download](#download) `Meeting-Copilot-<version>-arm64.dmg`, open it, and drag **Meeting Copilot** to Applications.
 2. The app isn't signed with an Apple Developer ID yet, so macOS blocks the first open. Open it once, then go to System Settings > Privacy & Security and click **Open Anyway**. (Or run `xattr -dr com.apple.quarantine "/Applications/Meeting Copilot.app"`.)
 3. The app walks you through the rest:
    - **Install Claude Code** (if it isn't on your Mac) runs Anthropic's official installer.
