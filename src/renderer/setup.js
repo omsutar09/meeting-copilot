@@ -4,8 +4,10 @@
 
 const ENGINE_NAMES = { parakeet: 'Parakeet', zipformer: 'Zipformer' };
 const CANCELLED = 'Sign-in was cancelled.';
-let claudeReady = false;
-let modelsReady = false;
+// Assumed ready until a check says otherwise, so an empty setup area doesn't
+// flash (and shift the layout) while the two checks are still running.
+let claudeReady = true;
+let modelsReady = true;
 
 const show = (id, on) => $(id).classList.toggle('hidden', !on);
 const megabytes = (bytes) => `${Math.round(bytes / 1e6)} MB`;
@@ -140,5 +142,16 @@ copilot.onModelsProgress((p) => {
 $('modelsBtn').onclick = downloadSpeechModel;
 
 // ---------- start ----------
-refreshClaude().catch((err) => banner(err.message || String(err)));
-refreshModels().catch((err) => banner(err.message || String(err)));
+// If a check itself fails, show its card (with the error) rather than hiding setup.
+refreshClaude().catch((err) => {
+  claudeReady = false;
+  show('claudeCard', true);
+  refreshSetup();
+  banner(err.message || String(err));
+});
+refreshModels().catch((err) => {
+  modelsReady = false;
+  show('modelsCard', true);
+  refreshSetup();
+  banner(err.message || String(err));
+});
