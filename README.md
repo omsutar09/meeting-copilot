@@ -72,6 +72,8 @@ Settings are stored in `~/Library/Application Support/Meeting Copilot/settings.j
 | Ask something specific | type in "Ask Claude about this call…" |
 | Answer what's on screen | **Analyze screen** or `⌘⇧1` (works from any app). Takes a screenshot of the display under the pointer and answers the question or coding problem on it: approach, complexity and working code. Needs the same Screen Recording permission as system audio. The screenshot goes to Claude and is not saved |
 | Hide / show window | `⌘⇧H` |
+| Resize or move the window | drag its edges or title bar. The size and position are remembered for next time. If that screen is no longer connected, the window opens on your main screen |
+| Give the answer or transcript more room | drag the bar between **Suggested answer** and **Transcript**, or click it and use ↑/↓. Double-click resets it. The split is remembered |
 | Stop the current answer | `⌘⇧X` |
 
 **Hide window from screen sharing** (on by default) keeps the overlay out of your own screen shares and recordings.
@@ -102,7 +104,10 @@ src/screen-capture.js screenshot of the display under the pointer, sized for Cla
 src/claude-auth.js Claude Code install, sign-in status, login and logout
 src/models.js      in-app speech model download (installed app)
 src/renderer/setup.js first-run cards: Claude sign-in and model download
+src/renderer/split.js draggable divider between answer and transcript
+src/window-state.js remembers window size and position
 test/              unit tests (npm test)
+e2e/               end-to-end tests that launch the real app (npm run test:e2e)
 src/settings.js    settings + encrypted keys
 src/preload.js     safe bridge to the renderer
 src/renderer/      UI, audio capture, PCM AudioWorklet

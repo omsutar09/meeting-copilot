@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain, globalShortcut, desktopCapturer, session, systemPreferences, shell, dialog, screen } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const settingsStore = require('./settings');
+const { parseState, restoreBounds, createStateSaver, MIN_SIZE } = require('./window-state');
 const { Transcriber } = require('./transcriber');
 const { checkModels } = require('./asr/engines');
 const { AutoAnswer } = require('./auto-answer');
@@ -34,12 +36,21 @@ let running = false;
 
 const send = (channel, payload) => win && !win.isDestroyed() && win.webContents.send(channel, payload);
 
+function readWindowState(file) {
+  try {
+    return parseState(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return null; // first launch, or the file was removed
+  }
+}
+
 function createWindow() {
+  const stateFile = path.join(app.getPath('userData'), 'window-state.json');
+  const bounds = restoreBounds(readWindowState(stateFile), screen.getAllDisplays(), screen.getPrimaryDisplay());
   win = new BrowserWindow({
-    width: 460,
-    height: 680,
-    minWidth: 340,
-    minHeight: 300,
+    ...bounds,
+    minWidth: MIN_SIZE.width,
+    minHeight: MIN_SIZE.height,
     alwaysOnTop: true,
     titleBarStyle: 'hiddenInset',
     vibrancy: 'under-window',
@@ -58,6 +69,17 @@ function createWindow() {
   // The window only ever shows the app's own page; links open in the browser via main.
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (e) => e.preventDefault());
+
+  // Remember size and position (the normal bounds, not full screen).
+  const saver = createStateSaver({ file: stateFile, onError: (err) => console.error('window position not saved:', err.message) });
+  const remember = () => !win.isDestroyed() && saver.schedule(win.getNormalBounds());
+  win.on('resize', remember);
+  win.on('move', remember);
+  win.on('close', () => {
+    remember();
+    saver.flush();
+  });
+
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 }
 
