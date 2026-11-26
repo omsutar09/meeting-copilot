@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, globalShortcut, desktopCapturer, session, systemPreferences, shell, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, globalShortcut, desktopCapturer, session, systemPreferences, shell, dialog, screen } = require('electron');
 const path = require('path');
 const settingsStore = require('./settings');
 const { Transcriber } = require('./transcriber');
@@ -6,6 +6,10 @@ const { checkModels } = require('./asr/engines');
 const { AutoAnswer } = require('./auto-answer');
 const { readResume, fetchJobDescription } = require('./context');
 const { ClaudeResponder } = require('./claude');
+const { captureScreen } = require('./screen-capture');
+
+// How long macOS needs to remove the hidden overlay before the screenshot.
+const HIDE_SETTLE_MS = 150;
 
 // Lets Chromium capture macOS system audio through ScreenCaptureKit
 // (macOS 13+) when the page calls getDisplayMedia with audio.
@@ -124,6 +128,69 @@ function triggerAnswer(focus, speaker) {
   });
 }
 
+function screenCaptureMessage(err) {
+  if (err.code === 'permission') {
+    const holder = screenPermissionHolder();
+    return (
+      `Couldn't take a screenshot: macOS hasn't given screen recording access to ${holder}. ` +
+      `Turn it on in System Settings > Privacy & Security > Screen & System Audio Recording, then quit ${holder.split(' (')[0]} completely and start again.`
+    );
+  }
+  return `Couldn't take a screenshot: ${err.message}`;
+}
+
+// With content protection on, the overlay is already left out of screenshots.
+// Otherwise hide it for the moment of capture so it doesn't cover the screen.
+async function takeScreenshot() {
+  const hide = !settings.contentProtection && win && !win.isDestroyed() && win.isVisible();
+  if (hide) {
+    win.hide();
+    await new Promise((r) => setTimeout(r, HIDE_SETTLE_MS));
+  }
+  try {
+    return await captureScreen({ desktopCapturer, screen, systemPreferences });
+  } finally {
+    if (hide && !win.isDestroyed()) win.showInactive();
+  }
+}
+
+let capturing = false;
+let captureRun = 0; // bumped by cancelAnswer() so a capture in progress is dropped
+
+function cancelAnswer() {
+  captureRun++;
+  responder.cancel();
+}
+
+// Screenshot the display under the pointer and answer what's on it.
+async function analyzeScreen() {
+  if (capturing) return;
+  capturing = true;
+  responder.cancel(); // stop any answer still streaming, so the panel shows only this one
+  const run = ++captureRun;
+  send('answer:event', { type: 'start', screen: true });
+  let screenshot;
+  try {
+    screenshot = await takeScreenshot();
+  } catch (err) {
+    console.error('screen capture failed:', err.code || '', err.message);
+    send('answer:event', { type: 'error', error: screenCaptureMessage(err) });
+    return;
+  } finally {
+    capturing = false;
+  }
+  if (run !== captureRun) {
+    send('answer:event', { type: 'error', error: 'Screen analysis stopped.' }); // cancelled while capturing
+    return;
+  }
+  responder.answer({
+    settings,
+    transcript: formatTranscript(),
+    screenshot,
+    onEvent: (e) => send('answer:event', e.type === 'start' ? { ...e, screen: true } : e),
+  });
+}
+
 const autoAnswer = new AutoAnswer({
   trigger: (speaker) => {
     triggerAnswer(undefined, speaker);
@@ -222,7 +289,8 @@ ipcMain.on('audio', (_e, { source, chunk }) => {
 });
 
 ipcMain.on('answer:request', (_e, focus) => triggerAnswer(focus));
-ipcMain.on('answer:cancel', () => responder.cancel());
+ipcMain.on('screen:analyze', () => analyzeScreen());
+ipcMain.on('answer:cancel', () => cancelAnswer());
 ipcMain.on('transcript:clear', () => {
   transcript = [];
   autoAnswer.clear();
@@ -246,7 +314,11 @@ app.whenReady().then(() => {
     if (win.isVisible()) win.hide();
     else win.showInactive();
   });
-  globalShortcut.register('CommandOrControl+Shift+X', () => responder.cancel());
+  globalShortcut.register('CommandOrControl+Shift+X', () => cancelAnswer());
+  // Cmd+Shift+1: screenshot the screen and answer the question or problem on it.
+  if (!globalShortcut.register('CommandOrControl+Shift+1', () => analyzeScreen())) {
+    console.error('Cmd+Shift+1 is taken by another app; use the Analyze screen button instead.');
+  }
 });
 
 app.on('will-quit', () => {

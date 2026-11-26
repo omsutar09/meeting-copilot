@@ -8,6 +8,7 @@ let mediaStreams = [];
 let answerText = '';
 let answerStartedAt = 0;
 let autoFrom = null; // 'THEM' / 'ME' when the current answer was triggered automatically
+let fromScreen = false; // the current answer is about a screenshot
 const interim = { THEM: '', ME: '' };
 let lines = [];
 
@@ -239,9 +240,14 @@ copilot.onStatus(({ source, status, error }) => {
 copilot.onAnswer((e) => {
   if (e.type === 'start') {
     autoFrom = e.auto;
+    fromScreen = Boolean(e.screen);
     answerText = '';
     answerStartedAt = performance.now();
-    $('answerMeta').textContent = autoFrom ? `auto (${autoFrom === 'ME' ? 'your' : 'their'} question) · thinking…` : 'thinking…';
+    $('answerMeta').textContent = fromScreen
+      ? 'screen · capturing and reading…'
+      : autoFrom
+        ? `auto (${autoFrom === 'ME' ? 'your' : 'their'} question) · thinking…`
+        : 'thinking…';
     renderAnswer(true);
   } else if (e.type === 'delta') {
     if (!answerText) $('answerMeta').textContent = `first words in ${((performance.now() - answerStartedAt) / 1000).toFixed(1)}s`;
@@ -251,7 +257,8 @@ copilot.onAnswer((e) => {
     renderAnswer(false);
     const u = e.usage || {};
     const secs = ((performance.now() - answerStartedAt) / 1000).toFixed(1);
-    $('answerMeta').textContent = `${autoFrom ? 'auto · ' : ''}${secs}s${u.cache_read_input_tokens ? ' · cached context' : ''}`;
+    const origin = fromScreen ? 'screen · ' : autoFrom ? 'auto · ' : '';
+    $('answerMeta').textContent = `${origin}${secs}s${u.cache_read_input_tokens ? ' · cached context' : ''}`;
   } else if (e.type === 'error') {
     renderAnswer(false);
     $('answerMeta').textContent = '';
@@ -262,6 +269,7 @@ copilot.onAnswer((e) => {
 // ---------- UI wiring ----------
 $('startBtn').onclick = () => (listening ? stopListening() : startListening());
 $('answerBtn').onclick = () => copilot.requestAnswer();
+$('screenBtn').onclick = () => copilot.analyzeScreen();
 $('clearBtn').onclick = () => copilot.clearTranscript();
 $('settingsBtn').onclick = openSettings;
 $('closeSettings').onclick = () => $('drawer').classList.add('hidden');

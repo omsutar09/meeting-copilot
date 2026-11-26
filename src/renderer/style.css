@@ -72,7 +72,7 @@ button.primary { background: var(--accent); color: var(--accent-text); border-co
 button.icon { background: none; border: none; padding: 2px 6px; font-size: 15px; color: var(--muted); }
 button.link { background: none; border: none; padding: 0; color: var(--muted); text-decoration: underline; font-size: 12px; }
 
-.controls { display: flex; gap: 8px; align-items: center; padding: 0 12px 10px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 0 12px 10px; }
 .controls .primary { flex: 1; }
 .auto { display: flex; align-items: center; gap: 8px; }
 .auto-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }

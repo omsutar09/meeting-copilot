@@ -5,7 +5,9 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "models": "bash scripts/download-models.sh"
+    "models": "bash scripts/download-models.sh",
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage"
   },
   "author": "",
   "type": "commonjs",

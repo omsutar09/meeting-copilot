@@ -39,6 +39,7 @@ Settings are stored in `~/Library/Application Support/meeting-copilot/settings.j
 | Auto-answer when a question is asked | the **Auto: Them / Me** toggles. **Them** answers the interviewer's questions (call audio); **Me** answers questions you ask out loud (your mic). Turn on either or both. If the mic picks up the other side through your speakers, the same question is answered only once |
 | Answer now | **Answer now** or `⌘⇧↵` (works from any app) |
 | Ask something specific | type in "Ask Claude about this call…" |
+| Answer what's on screen | **Analyze screen** or `⌘⇧1` (works from any app). Takes a screenshot of the display under the pointer and answers the question or coding problem on it: approach, complexity and working code. Needs the same Screen Recording permission as system audio. The screenshot goes to Claude and is not saved |
 | Hide / show window | `⌘⇧H` |
 | Stop the current answer | `⌘⇧X` |
 
@@ -66,6 +67,8 @@ src/transcriber.js runs the speech engine in a utility process
 src/asr/           sherpa-onnx engines (Parakeet + VAD, streaming Zipformer)
 scripts/           model download script (models go in ./models)
 src/claude.js      answers via the Claude Code CLI (keeps one process ready)
+src/screen-capture.js screenshot of the display under the pointer, sized for Claude
+test/              unit tests (npm test)
 src/settings.js    settings + encrypted keys
 src/preload.js     safe bridge to the renderer
 src/renderer/      UI, audio capture, PCM AudioWorklet

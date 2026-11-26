@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('copilot', {
   sendAudio: (source, chunk) => ipcRenderer.send('audio', { source, chunk }),
   requestAnswer: (focus) => ipcRenderer.send('answer:request', focus),
   cancelAnswer: () => ipcRenderer.send('answer:cancel'),
+  analyzeScreen: () => ipcRenderer.send('screen:analyze'),
   clearTranscript: () => ipcRenderer.send('transcript:clear'),
   openScreenSettings: () => ipcRenderer.send('open:screen-settings'),
   onTranscript: on('transcript:update'),
