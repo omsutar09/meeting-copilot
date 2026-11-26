@@ -9,7 +9,8 @@
     "test": "node --test",
     "test:coverage": "node --test --experimental-test-coverage",
     "dist": "electron-builder --mac",
-    "pack": "electron-builder --mac --dir"
+    "pack": "electron-builder --mac --dir",
+    "test:e2e": "playwright test"
   },
   "author": "",
   "type": "commonjs",
@@ -18,6 +19,7 @@
     "sherpa-onnx-node": "^2.0.2"
   },
   "devDependencies": {
+    "@playwright/test": "1.65.0",
     "electron": "^45.4.1",
     "electron-builder": "26.18.1"
   },
