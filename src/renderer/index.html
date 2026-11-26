@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    />
+    <title>Meeting Copilot</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="titlebar">
+      <div class="brand">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">Idle</span>
+      </div>
+      <div class="meters">
+        <span class="meter" title="Them (system audio)"><span class="lbl">Them</span><i id="meterThem"></i></span>
+        <span class="meter" title="Me (microphone)"><span class="lbl">Me</span><i id="meterMe"></i></span>
+      </div>
+      <button class="icon" id="settingsBtn" title="Settings">⚙︎</button>
+    </header>
+
+    <div class="controls">
+      <button class="primary" id="startBtn">Start listening</button>
+      <button id="answerBtn" title="Cmd+Shift+Enter">Answer now</button>
+      <div class="auto" title="Answer automatically when a question is asked">
+        <span class="auto-label">Auto</span>
+        <label class="toggle" title="Answer the interviewer's questions (call audio)"><input type="checkbox" id="autoThem" /> Them</label>
+        <label class="toggle" title="Answer questions you ask (your microphone)"><input type="checkbox" id="autoMe" /> Me</label>
+      </div>
+    </div>
+
+    <div class="banner hidden" id="banner"></div>
+
+    <section class="answer">
+      <div class="section-head">
+        <span>Suggested answer</span>
+        <span class="muted" id="answerMeta"></span>
+      </div>
+      <div class="answer-body" id="answer">
+        <p class="placeholder">Start listening. When the other person asks a question, a suggested answer appears here.<br /><br />
+        <kbd>⌘⇧↵</kbd> answer now · <kbd>⌘⇧H</kbd> hide/show · <kbd>⌘⇧X</kbd> stop answer</p>
+      </div>
+      <form class="ask" id="askForm">
+        <input id="askInput" placeholder="Ask Claude about this call…" autocomplete="off" />
+      </form>
+    </section>
+
+    <section class="transcript">
+      <div class="section-head">
+        <span>Transcript</span>
+        <button class="link" id="clearBtn">Clear</button>
+      </div>
+      <div class="transcript-body" id="transcript"></div>
+    </section>
+
+    <div class="drawer hidden" id="drawer">
+      <div class="drawer-inner">
+        <div class="section-head"><span>Settings</span><button class="icon" id="closeSettings">✕</button></div>
+
+
+        <div class="row">
+          <label>Model
+            <select id="model">
+              <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (recommended)</option>
+              <option value="claude-opus-5-5">Claude Opus 5.5 (smartest, slower to start)</option>
+              <option value="claude-haiku-5-5">Claude Haiku 5.5 (fastest)</option>
+            </select>
+          </label>
+          <label>Effort
+            <select id="effort">
+              <option value="low">Low (fastest)</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>Other side's audio
+            <select id="systemSource"></select>
+          </label>
+          <label>Your microphone
+            <select id="micDeviceId"></select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>Speech engine (on-device, English)
+            <select id="engine">
+              <option value="parakeet">Parakeet (most accurate)</option>
+              <option value="zipformer">sherpa-onnx Zipformer (fastest)</option>
+            </select>
+          </label>
+          <div class="checks">
+            <label class="toggle"><input type="checkbox" id="captureMic" /> Transcribe my mic</label>
+            <label class="toggle"><input type="checkbox" id="contentProtection" /> Hide window from screen sharing</label>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-head">
+            <span>Resume <span class="muted" id="resumeState"></span></span>
+            <button id="resumePick" type="button">Upload PDF…</button>
+          </div>
+          <div class="field-error hidden" id="resumeError"></div>
+          <textarea id="resume" rows="6" placeholder="Upload your resume as a PDF, or paste it here."></textarea>
+        </div>
+
+        <div class="field">
+          <div class="field-head"><span>Job description <span class="muted" id="jobState"></span></span></div>
+          <form class="inline" id="jobForm">
+            <input id="jobUrl" type="text" inputmode="url" placeholder="Paste the job posting link" autocomplete="off" />
+            <button id="jobFetch" type="submit">Fetch</button>
+          </form>
+          <div class="field-error hidden" id="jobError"></div>
+          <textarea id="jobDescription" rows="6" placeholder="Fetched from the link, or paste the description here."></textarea>
+        </div>
+
+        <label>Other notes (company research, talking points)
+          <textarea id="context" rows="4" placeholder="Anything else Claude should know for this call."></textarea>
+        </label>
+        <label>Answer style (optional)
+          <textarea id="instructions" rows="3" placeholder="e.g. Keep answers under 60 words. I'm a senior backend engineer."></textarea>
+        </label>
+
+        <div class="drawer-actions">
+          <button class="link" id="screenPerm">Open Screen Recording settings</button>
+          <button class="primary" id="saveSettings">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

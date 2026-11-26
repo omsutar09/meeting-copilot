@@ -1,0 +1,22 @@
+{
+  "name": "meeting-copilot",
+  "version": "0.1.0",
+  "description": "Real-time call copilot: on-device transcription (sherpa-onnx / Parakeet) + suggested answers (Claude)",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "models": "bash scripts/download-models.sh"
+  },
+  "author": "",
+  "type": "commonjs",
+  "dependencies": {
+    "pdfjs-dist": "^6.5.438",
+    "sherpa-onnx-node": "^2.0.2"
+  },
+  "devDependencies": {
+    "electron": "^45.4.1"
+  },
+  "productName": "Meeting Copilot",
+  "private": true,
+  "license": "UNLICENSED"
+}
