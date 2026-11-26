@@ -311,4 +311,4 @@ function runOnce({ system, prompt, model = 'claude-haiku-5-5', timeoutMs = 90000
   });
 }
 
-module.exports = { ClaudeResponder, runOnce, buildUserContent };
+module.exports = { ClaudeResponder, runOnce, buildUserContent, findClaude, childEnv };

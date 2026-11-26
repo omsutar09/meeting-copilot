@@ -82,6 +82,13 @@ button.link { background: none; border: none; padding: 0; color: var(--muted); t
 .banner.info { background: color-mix(in srgb, var(--warn) 16%, transparent); }
 .hidden { display: none !important; }
 
+.setup { margin: 0 12px 10px; display: flex; flex-direction: column; gap: 8px; }
+.card { padding: 10px; border-radius: 8px; background: rgba(127, 127, 127, 0.1); font-size: 12.5px; display: flex; flex-direction: column; gap: 8px; }
+.card p { margin: 0; }
+.card-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.card progress { width: 100%; }
+.log { font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+
 section { display: flex; flex-direction: column; min-height: 0; margin: 0 12px 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; }
 section.answer { flex: 3; }
 section.transcript { flex: 2; }

@@ -9,23 +9,7 @@ const SECRET_KEYS = [];
 // Left over from older versions (API keys, Deepgram); dropped when settings load.
 const LEGACY_KEYS = ['anthropicKey', 'deepgramKey', 'language', 'autoAnswer'];
 
-const DEFAULTS = {
-  model: 'claude-sonnet-5-5', // fast first words; Opus is slower to start answering
-  effort: 'low', // low keeps answers fast enough for a live conversation
-  engine: 'parakeet', // local speech-to-text: 'parakeet' or 'zipformer'
-  autoAnswerThem: true, // answer the other side's questions automatically
-  autoAnswerMe: true, // answer questions you ask, too
-  contentProtection: true, // keep the overlay out of your own screen shares
-  systemSource: 'loopback', // 'loopback' or an input deviceId (e.g. BlackHole)
-  micDeviceId: 'default',
-  captureMic: true,
-  resume: '', // resume text (typed, or extracted from an uploaded PDF)
-  resumeFile: '', // name of the uploaded file, for display
-  jobUrl: '',
-  jobDescription: '',
-  context: '', // other notes: company research, talking points...
-  instructions: '', // extra style instructions
-};
+const { DEFAULTS } = require('./settings-schema');
 
 const file = () => path.join(app.getPath('userData'), 'settings.json');
 

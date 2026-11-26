@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { BrowserWindow, session } = require('electron');
 const { runOnce } = require('./claude');
+const { lockDownSession } = require('./permissions');
 
 const MAX_CHARS = 30000;
 
@@ -50,6 +51,16 @@ async function readResume(file) {
 
 // Job sites build their pages with JavaScript, so load the link in a hidden
 // window, like a browser would, and read the text the page shows.
+// In-memory session for job pages: no permissions (mic, location...), no downloads.
+let jobSession;
+function jobFetchSession() {
+  if (!jobSession) {
+    jobSession = session.fromPartition('job-fetch');
+    lockDownSession(jobSession);
+  }
+  return jobSession;
+}
+
 function loadPageText(url, timeoutMs = 25000) {
   return new Promise((resolve, reject) => {
     const win = new BrowserWindow({
@@ -58,7 +69,7 @@ function loadPageText(url, timeoutMs = 25000) {
       height: 900,
       webPreferences: {
         // Separate, in-memory cookie jar: nothing from this page persists.
-        session: session.fromPartition('job-fetch'),
+        session: jobFetchSession(),
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,

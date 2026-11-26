@@ -51,7 +51,7 @@ function resolveFiles(name, modelsDir) {
     files[k] = path.join(modelsDir, spec.dir, f);
     if (!fs.existsSync(files[k])) {
       throw new Error(
-        `Speech model file missing: ${path.relative(modelsDir, files[k])}. Run "npm run models" in the project folder, then try again.`,
+        `Speech model file missing: ${path.relative(modelsDir, files[k])}. Download the speech model in the app (or run "npm run models" in the project folder), then try again.`,
       );
     }
   }

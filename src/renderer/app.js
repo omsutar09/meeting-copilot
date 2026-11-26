@@ -131,6 +131,7 @@ async function startListening() {
     setStatus('Idle');
     banner(res.error);
     if (res.screenPermission) copilot.openScreenSettings();
+    if (res.needsModels) refreshModels(); // setup.js shows the download card
     return;
   }
 
@@ -220,6 +221,7 @@ async function saveSettings() {
   settings = await copilot.saveSettings(next);
   $('drawer').classList.add('hidden');
   banner(listening ? 'Saved. Restart listening to apply audio or engine changes.' : '', 'info');
+  refreshModels(); // a different engine may need its own model
 }
 
 // ---------- events from main ----------
@@ -333,6 +335,5 @@ $('askForm').onsubmit = (e) => {
   $('autoThem').checked = Boolean(settings.autoAnswerThem);
   $('autoMe').checked = Boolean(settings.autoAnswerMe);
   renderTranscript();
-  const cc = await copilot.checkClaude();
-  if (!cc.ok) banner(cc.error);
+  // Claude Code and speech model checks happen in setup.js.
 })();

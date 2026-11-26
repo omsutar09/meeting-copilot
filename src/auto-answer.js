@@ -32,16 +32,16 @@ class AutoAnswer {
     if (!looksLikeQuestion(pending)) {
       // Keep a little context in case the question spans several lines.
       this.pending[speaker] = pending.length > 1500 ? pending.slice(-600) : pending;
-      this.log(`${speaker}: no question yet: "${text}"`);
+      this.log(`${speaker}: no question yet`); // no transcript text in logs
       return false;
     }
     this.pending = { THEM: '', ME: '' };
     if (this.last.speaker && this.last.speaker !== speaker && now - this.last.at < ECHO_WINDOW_MS) {
-      this.log(`${speaker}: question skipped (just answered ${this.last.speaker}; probably the mic hearing the speakers): "${text}"`);
+      this.log(`${speaker}: question skipped (just answered ${this.last.speaker}; probably the mic hearing the speakers)`); // no transcript text in logs
       return false;
     }
     this.last = { at: now, speaker };
-    this.log(`${speaker}: question detected, answering: "${text}"`);
+    this.log(`${speaker}: question detected, answering`); // no transcript text in logs
     this.trigger(speaker);
     return true;
   }

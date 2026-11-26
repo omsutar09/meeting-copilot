@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'"
     />
     <title>Meeting Copilot</title>
     <link rel="stylesheet" href="style.css" />
@@ -35,6 +35,33 @@
 
     <div class="banner hidden" id="banner"></div>
 
+    <section class="setup hidden" id="setup" aria-label="Setup">
+      <div class="card hidden" id="claudeCard">
+        <div><strong>Claude</strong> <span id="claudeText"></span></div>
+        <div class="card-actions">
+          <button class="primary hidden" id="claudeInstallBtn">Install Claude Code</button>
+          <button class="primary hidden" id="claudeLoginBtn">Sign in to Claude</button>
+        </div>
+        <div class="log hidden" id="installLog"></div>
+        <div class="hidden" id="loginPending">
+          <p class="muted">Finish signing in in your browser. <button class="link" id="openLoginBtn" type="button">Open the sign-in page again</button></p>
+          <form class="inline" id="codeForm">
+            <input id="codeInput" placeholder="Paste the code if the page shows one" autocomplete="off" />
+            <button type="submit">Submit</button>
+            <button type="button" id="loginCancelBtn">Cancel</button>
+          </form>
+        </div>
+      </div>
+      <div class="card hidden" id="modelsCard">
+        <div><strong>Speech model</strong> <span id="modelsText"></span></div>
+        <div class="card-actions">
+          <button class="primary" id="modelsBtn">Download</button>
+          <span class="muted" id="modelsProgressText"></span>
+        </div>
+        <progress class="hidden" id="modelsProgress" max="1" value="0"></progress>
+      </div>
+    </section>
+
     <section class="answer">
       <div class="section-head">
         <span>Suggested answer</span>
@@ -60,6 +87,16 @@
     <div class="drawer hidden" id="drawer">
       <div class="drawer-inner">
         <div class="section-head"><span>Settings</span><button class="icon" id="closeSettings">✕</button></div>
+
+        <div class="field">
+          <div class="field-head">
+            <span>Claude account <span class="muted" id="accountText"></span></span>
+            <span>
+              <button class="hidden" id="accountLoginBtn" type="button">Sign in</button>
+              <button class="hidden" id="accountLogoutBtn" type="button">Sign out</button>
+            </span>
+          </div>
+        </div>
 
 
         <div class="row">
@@ -135,5 +172,6 @@
     </div>
 
     <script src="app.js"></script>
+    <script src="setup.js"></script>
   </body>
 </html>

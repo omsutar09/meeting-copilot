@@ -5,8 +5,13 @@ const { Transcriber } = require('./transcriber');
 const { checkModels } = require('./asr/engines');
 const { AutoAnswer } = require('./auto-answer');
 const { readResume, fetchJobDescription } = require('./context');
-const { ClaudeResponder } = require('./claude');
+const { spawn } = require('child_process');
+const { ClaudeResponder, findClaude, childEnv } = require('./claude');
+const { ClaudeAuth } = require('./claude-auth');
+const { sanitizeSettings } = require('./settings-schema');
+const { guardAppSession } = require('./permissions');
 const { captureScreen } = require('./screen-capture');
+const { missingDownloads, downloadSize, modelsDirFor, downloadModels } = require('./models');
 
 // How long macOS needs to remove the hidden overlay before the screenshot.
 const HIDE_SETTLE_MS = 150;
@@ -17,8 +22,12 @@ app.commandLine.appendSwitch('enable-features', 'MacLoopbackAudioForScreenShare,
 
 let win;
 let settings;
-const modelsDir = path.join(app.getAppPath(), 'models');
+// Installed app: ~/Library/Application Support/meeting-copilot/models. Development: ./models.
+const modelsDir = modelsDirFor({ isPackaged: app.isPackaged, appPath: app.getAppPath(), userData: app.getPath('userData') });
 const transcriber = new Transcriber(modelsDir);
+const claudeAuth = new ClaudeAuth({ spawn, findClaude, env: childEnv });
+const PROGRESS_INTERVAL_MS = 200; // how often download progress reaches the window
+let downloading = null; // { engine, promise } while a model downloads, so a second click joins it
 let responder; // created once the app is ready (needs the userData path)
 let transcript = []; // [{ speaker: 'THEM'|'ME', text, ts }]
 let running = false;
@@ -46,12 +55,16 @@ function createWindow() {
   win.setAlwaysOnTop(true, 'floating');
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setContentProtection(Boolean(settings.contentProtection));
+  // The window only ever shows the app's own page; links open in the browser via main.
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', (e) => e.preventDefault());
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 }
 
 // macOS grants Screen Recording to the app that *launched* this one: VS Code
 // or Terminal when run with `npm start`, or Electron when opened directly.
 function screenPermissionHolder() {
+  if (app.isPackaged) return 'Meeting Copilot';
   const known = {
     'com.microsoft.VSCode': 'Visual Studio Code',
     'com.apple.Terminal': 'Terminal',
@@ -216,7 +229,84 @@ function stopAll() {
 
 // ---------- IPC ----------
 ipcMain.handle('settings:get', () => settingsStore.publicView(settings));
-ipcMain.handle('claude:check', () => ClaudeResponder.check());
+
+// ---------- Claude sign-in ----------
+// A new login means the waiting Claude process may hold the old one; start fresh.
+function restartClaude() {
+  responder.shutdown();
+  responder.prewarm(settings);
+}
+
+ipcMain.handle('claude:status', () => claudeAuth.status());
+ipcMain.handle('claude:login', async () => {
+  const r = await claudeAuth.login({ onUrl: (url) => send('claude:login-url', url) });
+  if (r.ok) restartClaude();
+  return r;
+});
+ipcMain.handle('claude:login-code', (_e, code) => claudeAuth.submitCode(code));
+ipcMain.on('claude:login-cancel', () => claudeAuth.cancelLogin());
+// Only the link the CLI printed is opened, never a URL from the page.
+ipcMain.on('claude:open-login', () => claudeAuth.loginUrl && shell.openExternal(claudeAuth.loginUrl));
+ipcMain.handle('claude:logout', async () => {
+  const r = await claudeAuth.logout();
+  if (r.ok) responder.shutdown();
+  return r;
+});
+// The renderer can only ask; the user confirms in a native dialog the page can't draw.
+async function confirmInstall() {
+  const { response } = await dialog.showMessageBox(win, {
+    type: 'question',
+    buttons: ['Install', 'Cancel'],
+    defaultId: 0,
+    cancelId: 1,
+    message: 'Install Claude Code?',
+    detail: "This runs Anthropic's official installer (curl -fsSL https://claude.ai/install.sh | bash). Claude Code is installed in your home folder.",
+  });
+  return response === 0;
+}
+
+ipcMain.handle('claude:install', async () => {
+  if (!(await confirmInstall())) return { ok: false, cancelled: true };
+  const r = await claudeAuth.install({ onOutput: (text) => send('claude:install-output', text) });
+  if (r.ok && !findClaude()) return { ok: false, error: 'The installer finished, but Claude Code still could not be found. Restart the app and try again.' };
+  return r;
+});
+
+// ---------- Speech models ----------
+ipcMain.handle('models:status', () => {
+  const missing = missingDownloads(settings.engine, modelsDir);
+  return { engine: settings.engine, ready: !missing.length, bytes: downloadSize(missing) };
+});
+
+ipcMain.handle('models:download', async () => {
+  const engine = settings.engine;
+  if (downloading && downloading.engine !== engine) {
+    return { ok: false, error: `The ${downloading.engine} model is still downloading. Try again when it finishes.` };
+  }
+  if (!downloading) {
+    let lastSent = 0;
+    const promise = downloadModels({
+      engine,
+      modelsDir,
+      onProgress: (p) => {
+        const now = Date.now();
+        if (now - lastSent < PROGRESS_INTERVAL_MS && p.received < p.total) return;
+        lastSent = now;
+        send('models:progress', p);
+      },
+    }).finally(() => {
+      downloading = null;
+    });
+    downloading = { engine, promise };
+  }
+  try {
+    await downloading.promise;
+    return { ok: true };
+  } catch (err) {
+    console.error('model download failed:', err.message);
+    return { ok: false, error: err.message || String(err) };
+  }
+});
 
 ipcMain.handle('resume:pick', async () => {
   const pick = await dialog.showOpenDialog(win, {
@@ -246,7 +336,7 @@ ipcMain.handle('job:fetch', async (_e, url) => {
   }
 });
 ipcMain.handle('settings:save', (_e, next) => {
-  settings = settingsStore.save(next);
+  settings = settingsStore.save(sanitizeSettings(next));
   responder.prewarm(settings);
   win.setContentProtection(Boolean(settings.contentProtection));
   return settingsStore.publicView(settings);
@@ -264,6 +354,9 @@ ipcMain.handle('session:start', async (_e, { sources }) => {
     if (usesLoopback && (screen === 'denied' || screen === 'restricted')) {
       return { ok: false, error: screenPermissionError(), screenPermission: true };
     }
+  }
+  if (missingDownloads(settings.engine, modelsDir).length) {
+    return { ok: false, needsModels: true, error: 'Download the speech model first.' };
   }
   try {
     checkModels(settings.engine, modelsDir);
@@ -305,6 +398,7 @@ app.whenReady().then(() => {
   settings = settingsStore.load();
   responder = new ClaudeResponder({ cwd: path.join(app.getPath('userData'), 'claude-workdir') });
   responder.prewarm(settings);
+  guardAppSession(session.defaultSession);
   setupDisplayMediaHandler();
   createWindow();
 
@@ -326,5 +420,6 @@ app.on('will-quit', () => {
   stopAll();
   transcriber.kill();
   responder?.shutdown();
+  claudeAuth.stopAll();
 });
 app.on('window-all-closed', () => app.quit());
