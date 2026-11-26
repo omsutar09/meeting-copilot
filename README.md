@@ -10,9 +10,25 @@ A small always-on-top macOS app that listens to a call, transcribes both sides l
   - Both are English only and run with [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx).
 - **Answers**: Claude through your local **Claude Code** (`claude -p`), so they run on your Claude subscription with no API key. Default Sonnet 5.5 at low effort for speed, streamed token-by-token
 
-## Setup
+## Install the Mac app (Apple Silicon)
 
-1. Install **Claude Code** (https://claude.com/claude-code) and run `claude` once in Terminal to sign in with your Claude account.
+1. Open `Meeting Copilot-<version>-arm64.dmg` and drag **Meeting Copilot** to Applications.
+2. The app isn't signed with an Apple Developer ID yet, so macOS blocks the first open. Open it once, then go to System Settings > Privacy & Security and click **Open Anyway**. (Or run `xattr -dr com.apple.quarantine "/Applications/Meeting Copilot.app"`.)
+3. The app walks you through the rest:
+   - **Install Claude Code** (if it isn't on your Mac) runs Anthropic's official installer.
+   - **Sign in to Claude** opens the Claude sign-in page in your browser. If the page shows a code, paste it into the app. Answers then use that Claude subscription; no API key. ⚙︎ Settings shows the signed-in account and has **Sign out**.
+   - **Download** fetches the speech model for the selected engine (Parakeet: 483 MB, Zipformer: 310 MB) into `~/Library/Application Support/Meeting Copilot/models`.
+4. Continue from step 3 below. macOS asks for permissions for **Meeting Copilot** itself. Because the app is unsigned, macOS may ask again after you install a new version.
+
+Build the installer yourself with `npm run dist` (output in `dist/`).
+
+**Signing:** builds are ad-hoc signed, without Apple's hardened runtime. That is fine for your own Mac or a few testers who trust the build. Before sharing more widely, sign with an Apple Developer ID, turn on `hardenedRuntime` with entitlements, and notarize. Then macOS opens the app normally and keeps its permissions across updates.
+
+Speech models are checked against pinned SHA-256 checksums before they are unpacked.
+
+## Run from source
+
+1. Install **Claude Code** (https://claude.com/claude-code) and sign in, either in the app or with `claude` in Terminal.
 2. Install, download the speech models (about 800 MB, once), and run:
    ```bash
    npm install
@@ -30,7 +46,7 @@ A small always-on-top macOS app that listens to a call, transcribes both sides l
    - **Screen & System Audio Recording** access (needed to capture the other side's audio). After granting it, quit and restart the app.
    - macOS gives these permissions to the app you launched from. With `npm start` in VS Code's terminal, that's **Visual Studio Code**; in Terminal, it's **Terminal**. Turn the permission on for that app, then quit it completely (⌘Q) and reopen it.
 
-Settings are stored in `~/Library/Application Support/meeting-copilot/settings.json`. Claude Code keeps its own login.
+Settings are stored in `~/Library/Application Support/Meeting Copilot/settings.json`. Claude Code keeps its own login; the app only runs `claude auth login / status / logout`.
 
 ## Using it
 
@@ -68,6 +84,9 @@ src/asr/           sherpa-onnx engines (Parakeet + VAD, streaming Zipformer)
 scripts/           model download script (models go in ./models)
 src/claude.js      answers via the Claude Code CLI (keeps one process ready)
 src/screen-capture.js screenshot of the display under the pointer, sized for Claude
+src/claude-auth.js Claude Code install, sign-in status, login and logout
+src/models.js      in-app speech model download (installed app)
+src/renderer/setup.js first-run cards: Claude sign-in and model download
 test/              unit tests (npm test)
 src/settings.js    settings + encrypted keys
 src/preload.js     safe bridge to the renderer

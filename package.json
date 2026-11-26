@@ -7,7 +7,9 @@
     "start": "electron .",
     "models": "bash scripts/download-models.sh",
     "test": "node --test",
-    "test:coverage": "node --test --experimental-test-coverage"
+    "test:coverage": "node --test --experimental-test-coverage",
+    "dist": "electron-builder --mac",
+    "pack": "electron-builder --mac --dir"
   },
   "author": "",
   "type": "commonjs",
@@ -16,9 +18,45 @@
     "sherpa-onnx-node": "^2.0.2"
   },
   "devDependencies": {
-    "electron": "^45.4.1"
+    "electron": "^45.4.1",
+    "electron-builder": "26.18.1"
   },
   "productName": "Meeting Copilot",
   "private": true,
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "build": {
+    "appId": "app.meetingcopilot.desktop",
+    "productName": "Meeting Copilot",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/sherpa-onnx-*/**"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Meeting Copilot transcribes your side of the call on this Mac.",
+        "NSAudioCaptureUsageDescription": "Meeting Copilot transcribes the other side of the call (system audio) on this Mac."
+      }
+    },
+    "dmg": {
+      "title": "Meeting Copilot ${version}"
+    }
+  }
 }
